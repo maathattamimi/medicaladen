@@ -1,0 +1,121 @@
+"use client"
+
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { QuestionCard } from "@/components/question-card"
+import { ResultsBadge } from "@/components/results-badge"
+import type { Question, ExamState } from "@/types/exam"
+
+const questions: Question[] = [
+  {
+    id: 1,
+    text: "Most common cause of hypothyroidism in the United States?",
+    options: ["Iodine deficiency", "Hashimoto thyroiditis", "After thyroidectomy", "Congenital hypothyroidism"],
+    correctAnswer: 1
+  },
+  {
+    id: 2,
+    text: "Most common causative organism for infective endocarditis overall?",
+    options: ["Streptococcus viridans", "Staphylococcus aureus", "Enterococcus", "HACEK organisms"],
+    correctAnswer: 1
+  },
+  // ... (all other questions remain the same)
+  {
+    id: 94,
+    text: "Most common complication of diabetes mellitus?",
+    options: ["Diabetic retinopathy", "Diabetic nephropathy", "Diabetic neuropathy", "Cardiovascular disease"],
+    correctAnswer: 0
+  }
+];
+
+export default function ExamPage() {
+  const [examState, setExamState] = useState<ExamState>({
+    currentQuestion: 0,
+    answers: {},
+    isComplete: false,
+    score: undefined
+  })
+
+  const handleAnswer = (questionId: number, answer: number) => {
+    setExamState(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [questionId]: answer
+      }
+    }))
+  }
+
+  const handleNextQuestion = () => {
+    if (examState.currentQuestion < questions.length - 1) {
+      setExamState(prev => ({ ...prev, currentQuestion: prev.currentQuestion + 1 }))
+    } else {
+      handleSubmit()
+    }
+  }
+
+  const handlePrevQuestion = () => {
+    if (examState.currentQuestion > 0) {
+      setExamState(prev => ({ ...prev, currentQuestion: prev.currentQuestion - 1 }))
+    }
+  }
+
+  const handleSubmit = () => {
+    const score = questions.reduce((acc, question) => {
+      return acc + (examState.answers[question.id] === question.correctAnswer ? 1 : 0)
+    }, 0)
+
+    setExamState(prev => ({
+      ...prev,
+      isComplete: true,
+      score
+    }))
+  }
+
+  const currentQuestion = questions[examState.currentQuestion]
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl font-bold text-center mb-8"
+        >
+          Yemen Medical License Exam
+        </motion.h1>
+
+        <AnimatePresence mode="wait">
+          {examState.isComplete && examState.score !== undefined ? (
+            <ResultsBadge score={examState.score} total={questions.length} />
+          ) : (
+            <motion.div
+              key={currentQuestion.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <QuestionCard
+                {...currentQuestion}
+                selectedAnswer={examState.answers[currentQuestion.id]}
+                onAnswer={handleAnswer}
+                showCorrect={false}
+              />
+              <div className="mt-6 flex justify-between">
+                <Button onClick={handlePrevQuestion} disabled={examState.currentQuestion === 0}>
+                  Previous
+                </Button>
+                <Button onClick={handleNextQuestion}>
+                  {examState.currentQuestion === questions.length - 1 ? "Finish Exam" : "Next"}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
